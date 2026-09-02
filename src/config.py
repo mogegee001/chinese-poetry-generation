@@ -48,7 +48,10 @@ EARLY_STOPPING_PATIENCE = 3
 
 # -------------------- 生成 --------------------
 TEMPERATURE = 0.8
-TOP_K = 5
+TOP_P = 0.90
+# 全诗第一个字的上下文只有 <bos> 和诗体，适当扩大候选集合。
+FIRST_TOKEN_TEMPERATURE = 1.0
+FIRST_TOKEN_TOP_P = 0.98
 
 
 def get_checkpoint_path(model_type=None):

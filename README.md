@@ -59,13 +59,28 @@ python -m src.process
 python -m src.dataset
 python -m src.train
 python -m src.evaluate
-python -m src.predict --form 7 --temperature 0.8 --top-k 5
+python -m src.predict --form 7 --temperature 0.8 --top-p 0.90
 ```
 
 生成五言绝句：
 
 ```powershell
 python -m src.predict --form 5
+```
+
+生成阶段使用 Top-p 核采样。普通位置默认使用 `temperature=0.8、top_p=0.90`；
+由于全诗第一个字只有诗体信息作为上下文，默认单独使用
+`temperature=1.0、top_p=0.98` 扩大开头候选范围。参数可以直接覆盖：
+
+```powershell
+python -m src.predict --form 7 --temperature 0.8 --top-p 0.9 `
+  --first-temperature 1.0 --first-top-p 0.98
+```
+
+如需完全贪心生成，需要同时将普通位置和首字 temperature 设为 0：
+
+```powershell
+python -m src.predict --form 7 --temperature 0 --first-temperature 0
 ```
 
 查看训练曲线：
@@ -112,7 +127,7 @@ MODEL_TYPE = "manual_lstm"
 6. `model.py`：理解 embedding、循环层和 linear 的张量形状。
 7. `train.py`：理解前向传播、交叉熵、反向传播、验证和 checkpoint。
 8. `evaluate.py`：最后一次在测试集上报告泛化结果。
-9. `predict.py`：理解自回归生成以及 temperature、top-k 的作用。
+9. `predict.py`：理解自回归生成以及 temperature、top-p 的作用。
 
 建议先用内置 RNN 跑通完整流程，再依次训练内置 GRU/LSTM；理解公式后再切换
 `manual_rnn`、`manual_gru`、`manual_lstm`，逐个阅读和调试时间步计算。

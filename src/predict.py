@@ -11,8 +11,11 @@ def sample_next_token(
     logits,
     forbidden_token_ids,
     temperature,
-    top_k,
+    top_p,
 ):
+    if not 0.0 < top_p <= 1.0:
+        raise ValueError("top_p 必须位于 (0, 1] 区间")
+
     logits = logits.clone()
     logits[list(forbidden_token_ids)] = float("-inf")
 
@@ -20,11 +23,25 @@ def sample_next_token(
         return int(logits.argmax().item())
 
     logits = logits / temperature
-    top_k = min(top_k, logits.numel() - len(forbidden_token_ids))
-    top_values, top_indexes = torch.topk(logits, k=max(top_k, 1))
-    probabilities = torch.softmax(top_values, dim=-1)
+    sorted_logits, sorted_indexes = torch.sort(
+        logits,
+        descending=True,
+    )
+    sorted_probabilities = torch.softmax(sorted_logits, dim=-1)
+    cumulative_probabilities = torch.cumsum(
+        sorted_probabilities,
+        dim=-1,
+    )
+
+    # 保留第一个使累计概率达到 top_p 的 token。
+    remove_mask = cumulative_probabilities > top_p
+    remove_mask[1:] = remove_mask[:-1].clone()
+    remove_mask[0] = False
+    sorted_logits[remove_mask] = float("-inf")
+
+    probabilities = torch.softmax(sorted_logits, dim=-1)
     sampled_position = torch.multinomial(probabilities, num_samples=1)
-    return int(top_indexes[sampled_position].item())
+    return int(sorted_indexes[sampled_position].item())
 
 
 def generate_poem(
@@ -33,10 +50,18 @@ def generate_poem(
     device,
     form=7,
     temperature=config.TEMPERATURE,
-    top_k=config.TOP_K,
+    top_p=config.TOP_P,
+    first_token_temperature=config.FIRST_TOKEN_TEMPERATURE,
+    first_token_top_p=config.FIRST_TOKEN_TOP_P,
 ):
     if form not in (5, 7):
         raise ValueError("form 只能是 5 或 7")
+    if not 0.0 < top_p <= 1.0:
+        raise ValueError("top_p 必须位于 (0, 1] 区间")
+    if not 0.0 < first_token_top_p <= 1.0:
+        raise ValueError(
+            "first_token_top_p 必须位于 (0, 1] 区间"
+        )
 
     form_token = (
         tokenizer.wuyan_token
@@ -65,12 +90,25 @@ def generate_poem(
 
         for line_index in range(4):
             current_line = []
-            for _ in range(form):
+            for char_index in range(form):
+                is_first_token = (
+                    line_index == 0 and char_index == 0
+                )
+                current_temperature = (
+                    first_token_temperature
+                    if is_first_token
+                    else temperature
+                )
+                current_top_p = (
+                    first_token_top_p
+                    if is_first_token
+                    else top_p
+                )
                 next_token_id = sample_next_token(
                     logits=logits[0, -1],
                     forbidden_token_ids=forbidden_token_ids,
-                    temperature=temperature,
-                    top_k=top_k,
+                    temperature=current_temperature,
+                    top_p=current_top_p,
                 )
                 current_line.append(
                     tokenizer.index2token[next_token_id]
@@ -134,18 +172,28 @@ def parse_args():
         help="0 表示贪心生成；越大随机性越强",
     )
     parser.add_argument(
-        "--top-k",
-        type=int,
-        default=config.TOP_K,
-        help="只从概率最高的 k 个汉字中采样",
+        "--top-p",
+        type=float,
+        default=config.TOP_P,
+        help="从累计概率达到 p 的动态候选集合中采样",
+    )
+    parser.add_argument(
+        "--first-temperature",
+        type=float,
+        default=config.FIRST_TOKEN_TEMPERATURE,
+        help="全诗第一个字使用的 temperature",
+    )
+    parser.add_argument(
+        "--first-top-p",
+        type=float,
+        default=config.FIRST_TOKEN_TOP_P,
+        help="全诗第一个字使用的 top-p",
     )
     return parser.parse_args()
 
 
 def run_predict():
     args = parse_args()
-    if args.top_k < 1:
-        raise ValueError("--top-k 必须大于等于 1")
 
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
@@ -157,7 +205,9 @@ def run_predict():
         device=device,
         form=args.form,
         temperature=args.temperature,
-        top_k=args.top_k,
+        top_p=args.top_p,
+        first_token_temperature=args.first_temperature,
+        first_token_top_p=args.first_top_p,
     )
     print(f"模型: {checkpoint['model_type'].upper()}")
     print(poem)
