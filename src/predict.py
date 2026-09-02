@@ -3,7 +3,11 @@ import argparse
 import torch
 
 from src import config
-from src.model import build_model_from_checkpoint, load_checkpoint
+from src.model import (
+    PoetryModel,
+    build_model_from_checkpoint,
+    load_checkpoint,
+)
 from src.tokenizer import CharTokenizer
 
 
@@ -136,16 +140,23 @@ def generate_poem(
     )
 
 
-def load_resources(device):
-    checkpoint_path = config.get_checkpoint_path()
+def load_resources(device, model_type=None):
+    model_type = (model_type or config.MODEL_TYPE).lower()
+    checkpoint_path = config.get_checkpoint_path(model_type)
     if not checkpoint_path.exists():
         raise FileNotFoundError(
             f"找不到模型 {checkpoint_path}，"
-            "请先运行 python -m src.train"
+            f"请先运行 python -m src.train "
+            f"--model-type {model_type}"
         )
 
     tokenizer = CharTokenizer.from_vocab(config.VOCAB_PATH)
     checkpoint = load_checkpoint(checkpoint_path, device)
+    if checkpoint.get("model_type") != model_type:
+        raise ValueError(
+            f"checkpoint 中是 {checkpoint.get('model_type')}，"
+            f"命令行请求的是 {model_type}"
+        )
     if checkpoint.get("vocab") != tokenizer.vocab_list:
         raise ValueError(
             "当前 vocab.txt 与模型训练时使用的词表不一致"
@@ -158,6 +169,13 @@ def load_resources(device):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="生成一首五言或七言绝句")
+    parser.add_argument(
+        "--model-type",
+        type=str.lower,
+        choices=tuple(PoetryModel.recurrent_layers),
+        default=config.MODEL_TYPE,
+        help="选择要加载的模型",
+    )
     parser.add_argument(
         "--form",
         type=int,
@@ -198,7 +216,10 @@ def run_predict():
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
     )
-    model, tokenizer, checkpoint = load_resources(device)
+    model, tokenizer, checkpoint = load_resources(
+        device,
+        model_type=args.model_type,
+    )
     poem = generate_poem(
         model=model,
         tokenizer=tokenizer,

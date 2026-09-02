@@ -57,15 +57,15 @@ chinese-poetry-generation/
 pip install -r requirements.txt
 python -m src.process
 python -m src.dataset
-python -m src.train
-python -m src.evaluate
-python -m src.predict --form 7 --temperature 0.8 --top-p 0.90
+python -m src.train --model-type rnn
+python -m src.evaluate --model-type rnn
+python -m src.predict --model-type rnn --form 7 --temperature 0.8 --top-p 0.90
 ```
 
 生成五言绝句：
 
 ```powershell
-python -m src.predict --form 5
+python -m src.predict --model-type rnn --form 5
 ```
 
 生成阶段使用 Top-p 核采样。普通位置默认使用 `temperature=0.8、top_p=0.90`；
@@ -73,14 +73,15 @@ python -m src.predict --form 5
 `temperature=1.0、top_p=0.98` 扩大开头候选范围。参数可以直接覆盖：
 
 ```powershell
-python -m src.predict --form 7 --temperature 0.8 --top-p 0.9 `
+python -m src.predict --model-type rnn --form 7 --temperature 0.8 --top-p 0.9 `
   --first-temperature 1.0 --first-top-p 0.98
 ```
 
 如需完全贪心生成，需要同时将普通位置和首字 temperature 设为 0：
 
 ```powershell
-python -m src.predict --form 7 --temperature 0 --first-temperature 0
+python -m src.predict --model-type rnn --form 7 `
+  --temperature 0 --first-temperature 0
 ```
 
 查看训练曲线：
@@ -91,25 +92,23 @@ tensorboard --logdir logs
 
 ## 切换内置和手写循环网络
 
-在 `src/config.py` 中修改：
+使用命令行的 `--model-type` 参数切换，不需要修改源代码。可选值分为两组：
 
-```python
-MODEL_TYPE = "rnn"
+```text
+PyTorch 内置：rnn、gru、lstm
+项目中手写：manual_rnn、manual_gru、manual_lstm
 ```
 
-可选值分为两组：
+例如训练、评估并使用手写 GRU 生成诗歌：
 
-```python
-# PyTorch 内置的高性能实现
-MODEL_TYPE = "rnn"
-MODEL_TYPE = "gru"
-MODEL_TYPE = "lstm"
-
-# 项目中逐时间步实现的教学版本
-MODEL_TYPE = "manual_rnn"
-MODEL_TYPE = "manual_gru"
-MODEL_TYPE = "manual_lstm"
+```powershell
+python -m src.train --model-type manual_gru
+python -m src.evaluate --model-type manual_gru
+python -m src.predict --model-type manual_gru --form 7
 ```
+
+`config.MODEL_TYPE` 现在只作为省略命令行参数时的默认值。训练、评估、生成应
+传入相同的模型类型；程序会自动选择对应的 `best_<model_type>.pth`。
 
 六种模型使用相同的数据、词表、训练、评价和生成代码，并分别保存为
 `best_rnn.pth`、`best_manual_rnn.pth` 等文件，互不覆盖。手写版本显式计算

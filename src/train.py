@@ -1,3 +1,4 @@
+import argparse
 import random
 import time
 
@@ -95,7 +96,8 @@ def save_checkpoint(model, tokenizer, epoch, valid_metrics, path):
     torch.save(checkpoint, path)
 
 
-def train():
+def train(model_type=None):
+    model_type = (model_type or config.MODEL_TYPE).lower()
     set_random_seed(config.RANDOM_SEED)
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
@@ -112,7 +114,7 @@ def train():
 
     model = PoetryModel(
         vocab_size=tokenizer.vocab_size,
-        model_type=config.MODEL_TYPE,
+        model_type=model_type,
         pad_token_id=tokenizer.pad_token_id,
     ).to(device)
     parameter_count = sum(
@@ -218,5 +220,18 @@ def train():
     print(f"训练完成，最佳验证损失: {best_valid_loss:.4f}")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="训练古诗生成模型")
+    parser.add_argument(
+        "--model-type",
+        type=str.lower,
+        choices=tuple(PoetryModel.recurrent_layers),
+        default=config.MODEL_TYPE,
+        help="选择 PyTorch 内置或手写循环网络",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    train()
+    args = parse_args()
+    train(model_type=args.model_type)
