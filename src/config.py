@@ -27,7 +27,9 @@ MODEL_INPUT_LENGTH = MAX_SEQUENCE_LENGTH - 1
 
 
 # -------------------- 模型 --------------------
-# 在这里切换 "rnn"、"gru" 或 "lstm"，其余训练代码不需要修改。
+# 内置实现: "rnn"、"gru"、"lstm"
+# 手写实现: "manual_rnn"、"manual_gru"、"manual_lstm"
+# 只修改这里即可切换，其余训练、评估和生成代码不需要修改。
 MODEL_TYPE = "rnn"
 EMBEDDING_DIM = 128
 HIDDEN_SIZE = 256

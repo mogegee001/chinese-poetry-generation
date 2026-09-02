@@ -2,15 +2,11 @@
 
 一个基于 CCPC 数据集的字符级古诗生成学习项目。
 
-当前版本刻意保持与 `input-method-rnn` 相近的代码组织：
-
-`config -> tokenizer -> process -> dataset -> model -> train -> evaluate -> predict`
-
-基础版只完成三件事：
+基础版当前完成：
 
 1. 用 CCPC 官方训练集、验证集、测试集跑通完整流程。
 2. 用字符级 RNN 生成五言或七言绝句。
-3. 保留同一套接口，可在 RNN、GRU、LSTM 之间切换。
+3. 保留同一套接口，可在内置与手写 RNN、GRU、LSTM 之间切换。
 
 暂时不使用 `title`、`keywords`、`dynasty`、`author` 等条件，也暂时不加入
 注意力、Transformer、格律约束、Web 页面和复杂评价指标。
@@ -31,6 +27,7 @@ chinese-poetry-generation/
 │  ├─ tokenizer.py              # 字符级编码、解码与词表
 │  ├─ process.py                # CCPC 清洗、编码和 padding
 │  ├─ dataset.py                # Dataset 与 DataLoader
+│  ├─ manual_recurrent.py       # 手写 RNN/GRU/LSTM 时间步与门控公式
 │  ├─ model.py                  # RNN/GRU/LSTM 语言模型
 │  ├─ train.py                  # 训练、验证、早停和模型保存
 │  ├─ evaluate.py               # 测试集 loss/PPL/token accuracy
@@ -77,7 +74,7 @@ python -m src.predict --form 5
 tensorboard --logdir logs
 ```
 
-## 切换 RNN、GRU 和 LSTM
+## 切换内置和手写循环网络
 
 在 `src/config.py` 中修改：
 
@@ -85,9 +82,25 @@ tensorboard --logdir logs
 MODEL_TYPE = "rnn"
 ```
 
-可选值为 `"rnn"`、`"gru"`、`"lstm"`。三个模型使用相同的数据、词表、
-训练逻辑和评价指标，模型会分别保存为 `best_rnn.pth`、`best_gru.pth` 和
-`best_lstm.pth`，便于后续做公平对比。
+可选值分为两组：
+
+```python
+# PyTorch 内置的高性能实现
+MODEL_TYPE = "rnn"
+MODEL_TYPE = "gru"
+MODEL_TYPE = "lstm"
+
+# 项目中逐时间步实现的教学版本
+MODEL_TYPE = "manual_rnn"
+MODEL_TYPE = "manual_gru"
+MODEL_TYPE = "manual_lstm"
+```
+
+六种模型使用相同的数据、词表、训练、评价和生成代码，并分别保存为
+`best_rnn.pth`、`best_manual_rnn.pth` 等文件，互不覆盖。手写版本显式计算
+隐藏状态和门控，适合学习公式与调试；PyTorch 内置版本使用底层优化实现，正式
+训练速度通常明显更快。比较模型效果时可以保持其他超参数一致，但不要用两类
+实现的运行速度判断结构优劣。
 
 ## 推荐阅读和修改顺序
 
@@ -95,13 +108,15 @@ MODEL_TYPE = "rnn"
 2. `tokenizer.py`：理解“汉字 -> token id”的过程。
 3. `process.py`：理解一首诗怎样变成 input 与 target。
 4. `dataset.py`：检查 batch 的形状是否都是 `[batch_size, 33]`。
-5. `model.py`：理解 embedding、循环层和 linear 的张量形状。
-6. `train.py`：理解前向传播、交叉熵、反向传播、验证和 checkpoint。
-7. `evaluate.py`：最后一次在测试集上报告泛化结果。
-8. `predict.py`：理解自回归生成以及 temperature、top-k 的作用。
+5. `manual_recurrent.py`：逐步理解 RNN、GRU、LSTM 的状态更新公式。
+6. `model.py`：理解 embedding、循环层和 linear 的张量形状。
+7. `train.py`：理解前向传播、交叉熵、反向传播、验证和 checkpoint。
+8. `evaluate.py`：最后一次在测试集上报告泛化结果。
+9. `predict.py`：理解自回归生成以及 temperature、top-k 的作用。
 
-建议先完整训练 RNN 并确认生成流程可用，再只修改 `MODEL_TYPE` 训练 GRU 和
-LSTM。不要根据测试集调超参数；超参数选择只看验证集，测试集留给最终比较。
+建议先用内置 RNN 跑通完整流程，再依次训练内置 GRU/LSTM；理解公式后再切换
+`manual_rnn`、`manual_gru`、`manual_lstm`，逐个阅读和调试时间步计算。
+不要根据测试集调超参数；超参数选择只看验证集，测试集留给最终比较。
 
 ## 数据说明
 

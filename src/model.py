@@ -2,14 +2,18 @@ import torch
 from torch import nn
 
 from src import config
+from src.manual_recurrent import ManualGRU, ManualLSTM, ManualRNN
 
 
 class PoetryModel(nn.Module):
-    """Embedding + RNN/GRU/LSTM + Linear 的字符级语言模型。"""
+    """Embedding + RNN/GRU/LSTM + Linear"""
     recurrent_layers = {
         "rnn": nn.RNN,
         "gru": nn.GRU,
         "lstm": nn.LSTM,
+        "manual_rnn": ManualRNN,
+        "manual_gru": ManualGRU,
+        "manual_lstm": ManualLSTM,
     }
 
     def __init__(
