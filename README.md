@@ -18,6 +18,8 @@ chinese-poetry-generation/
 ├─ data/
 │  ├─ raw/ccpc/                 # CCPC 原始 train/valid/test 数据
 │  └─ processed/                # process.py 生成的模型输入
+├─ docs/images/
+│  └─ tensorboard_training_curves.png  # 六模型训练曲线
 ├─ logs/                        # TensorBoard 日志
 ├─ models/
 │  ├─ vocab.txt                 # 只根据训练集建立的字符词表
@@ -141,6 +143,51 @@ python -m src.predict --model-type manual_gru --form 7
 建议先用内置 RNN 跑通完整流程，再依次训练内置 GRU/LSTM；理解公式后再切换
 `manual_rnn`、`manual_gru`、`manual_lstm`，逐个阅读和调试时间步计算。
 不要根据测试集调超参数；超参数选择只看验证集，测试集留给最终比较。
+
+## 六种循环网络实验对比
+
+以下六组实验使用相同的数据、词表和训练配置：`embedding_dim=128`、
+`hidden_size=256`、`num_layers=1`、`dropout=0.2`、`batch_size=64`、
+`learning_rate=1e-3`、`max_grad_norm=1.0`、`Adam`、`random_seed=42`，均训练
+10 个 epoch。实验设备为 NVIDIA GeForce RTX 4060 Laptop GPU，结果来自
+`results/evaluation_*.json`，训练耗时由 TensorBoard event 的训练起点到
+第 10 个 epoch 记录时间计算。
+
+| 模型 | 参数量 | Valid Loss ↓ | Test Loss ↓ | Test PPL ↓ | Test Token Acc ↑ | 训练耗时 | 评估耗时 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| RNN（PyTorch） | 2,804,211 | 4.4977 | 4.5059 | 90.55 | 26.23% | 162.9 s | 0.833 s |
+| RNN（手写） | 2,804,211 | 4.4996 | 4.5101 | 90.93 | 26.15% | 346.8 s | 1.269 s |
+| GRU（PyTorch） | 3,001,843 | **4.3466** | **4.3534** | **77.74** | **27.86%** | 180.5 s | 0.885 s |
+| GRU（手写） | 3,001,843 | 4.3567 | 4.3651 | 78.66 | 27.66% | 602.6 s | 2.115 s |
+| LSTM（PyTorch） | 3,100,659 | 4.4019 | 4.4107 | 82.33 | 26.96% | 190.9 s | 1.078 s |
+| LSTM（手写） | 3,100,659 | 4.3980 | 4.4069 | 82.01 | 27.01% | 559.1 s | 1.912 s |
+
+本次实验可以得到以下结论：
+
+1. 内置 GRU 获得最低的测试 loss 和 perplexity，同时取得最高的 token
+   accuracy，是当前配置下效果最好的模型。
+2. GRU 和 LSTM 都优于普通 RNN，说明门控状态更新在当前字符级诗歌数据上更有
+   利于保留上下文；但不能根据单次实验断言 GRU 在所有任务上都优于 LSTM。
+3. 同一结构的内置与手写版本参数量相同，最终指标也很接近，说明手写门控公式和
+   训练流程整体是可信的。两者不会得到完全相同的数值，因为参数初始化、权重排列
+   和底层计算顺序不同。
+4. 手写 RNN、GRU、LSTM 的训练时间分别约为内置版本的 `2.13×`、`3.34×`、
+   `2.93×`，评估时间约为 `1.52×`、`2.39×`、`1.77×`。手写实现需要在
+   Python 中逐时间步调用许多小算子；PyTorch 内置层可以使用融合后的
+   CUDA/cuDNN 内核，因此速度明显更快。
+5. 六条验证曲线在第 10 个 epoch 时仍在缓慢改善，且与训练曲线走势一致，暂未
+   出现明显发散。是否增加训练轮数应继续根据验证集判断，不能根据测试集调参。
+
+### TensorBoard 训练曲线
+
+下图直接从六次 TensorBoard event 日志读取。实线表示 PyTorch 内置层，虚线
+表示手写实现；同一颜色代表相同的循环网络结构。
+
+![六种循环网络的 TensorBoard 训练曲线](docs/images/tensorboard_training_curves.png)
+
+当前比较只包含一次固定随机种子的实验，token accuracy 也不能完整评价诗歌的
+语义、格律和多样性。更严格的结论需要使用多个随机种子，并补充重复率、人工评价
+或格律合规率等生成质量指标。
 
 ## 数据说明
 
