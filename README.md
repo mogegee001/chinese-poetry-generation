@@ -191,4 +191,14 @@ python -m src.predict --model-type manual_gru --form 7
 
 ## 数据说明
 
-CCPC 数据集用于学术研究。原始数据和处理后的大文件已在 `.gitignore` 中排除，
+本项目使用清华大学 THUAIPoet（九歌）团队发布的
+[THU Chinese Classical Poetry Corpus（THU-CCPC V1.0）](https://github.com/THUNLP-AIPoet/Datasets/tree/master/CCPC)。
+
+数据集包含五言、七言绝句，并划分为：
+
+- 训练集：109,727 首
+- 验证集：7,979 首
+- 测试集：9,976 首
+
+原始数据仅供学术研究使用。本仓库不直接分发原始数据文件，使用者应从官方仓库
+获取数据，并遵守原数据集的使用和引用要求。
