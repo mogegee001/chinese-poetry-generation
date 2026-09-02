@@ -1,0 +1,55 @@
+{
+  "evaluated_at": "2026-09-02T18:47:07+08:00",
+  "model_type": "manual_gru",
+  "checkpoint": {
+    "path": "models/best_manual_gru.pth",
+    "epoch": 10,
+    "validation_loss": 4.3567258549806605,
+    "validation_accuracy": 0.2763772417577195
+  },
+  "model_hyperparameters": {
+    "vocab_size": 7027,
+    "embedding_dim": 128,
+    "hidden_size": 256,
+    "num_layers": 1,
+    "dropout": 0.2,
+    "pad_token_id": 0,
+    "parameter_count": 3001843
+  },
+  "training_hyperparameters": {
+    "optimizer": "Adam",
+    "loss_function": "CrossEntropyLoss",
+    "learning_rate": 0.001,
+    "batch_size": 64,
+    "epochs_requested": 10,
+    "max_grad_norm": 1.0,
+    "early_stopping_patience": 3,
+    "random_seed": 42
+  },
+  "data_hyperparameters": {
+    "max_sequence_length": 34,
+    "model_input_length": 33
+  },
+  "evaluation_hyperparameters": {
+    "batch_size": 64,
+    "test_split_path": "data/processed/test.jsonl",
+    "test_samples": 9976,
+    "ignore_index": 0,
+    "loss_reduction": "sum_then_mean_over_non_pad_tokens",
+    "metric_scope": "non_padding_tokens_including_structure_tokens"
+  },
+  "environment": {
+    "torch_version": "2.13.0+cu126",
+    "device": "cuda",
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "duration_seconds": 2.1151,
+  "test_metrics": {
+    "loss": 4.3651359746863125,
+    "perplexity": 78.66009499637454,
+    "accuracy": 0.27663787145818935,
+    "correct_tokens": 80059,
+    "evaluated_tokens": 289400
+  }
+}
