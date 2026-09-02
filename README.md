@@ -192,5 +192,3 @@ python -m src.predict --model-type manual_gru --form 7
 ## 数据说明
 
 CCPC 数据集用于学术研究。原始数据和处理后的大文件已在 `.gitignore` 中排除，
-发布 GitHub 仓库时请在 README 中保留数据来源与使用说明，不要直接提交模型权重
-和数据文件。
