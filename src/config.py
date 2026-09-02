@@ -8,6 +8,7 @@ RAW_DATA_DIR = ROOT_DIR / "data" / "raw" / "ccpc"
 PROCESSED_DATA_DIR = ROOT_DIR / "data" / "processed"
 LOGS_DIR = ROOT_DIR / "logs"
 MODELS_DIR = ROOT_DIR / "models"
+RESULTS_DIR = ROOT_DIR / "results"
 
 RAW_TRAIN_PATH = RAW_DATA_DIR / "ccpc_train_v1.0.jsonl"
 RAW_VALID_PATH = RAW_DATA_DIR / "ccpc_valid_v1.0.jsonl"

@@ -22,6 +22,9 @@ chinese-poetry-generation/
 ├─ models/
 │  ├─ vocab.txt                 # 只根据训练集建立的字符词表
 │  └─ best_rnn.pth              # 验证集损失最低的模型
+├─ results/
+│  ├─ evaluation_*.json         # 每次评估的完整结果
+│  └─ evaluation_history.jsonl  # 所有评估的追加式历史记录
 ├─ src/
 │  ├─ config.py                 # 路径、模型和训练超参数
 │  ├─ tokenizer.py              # 字符级编码、解码与词表
@@ -61,6 +64,13 @@ python -m src.train --model-type rnn
 python -m src.evaluate --model-type rnn
 python -m src.predict --model-type rnn --form 7 --temperature 0.8 --top-p 0.90
 ```
+
+每次评估都会在 `results/` 中创建独立 JSON，并向
+`evaluation_history.jsonl` 追加一行。记录包括测试集 loss、perplexity、
+token accuracy、模型结构参数、训练参数、checkpoint epoch、评估 batch size、
+设备和耗时。训练生成的 checkpoint 会保存实际训练超参数，评估时直接读取这些
+参数；缺少训练或数据参数的 checkpoint 不再兼容，需要重新训练。评估 JSON 文件
+体积很小，可以提交到 GitHub 作为模型对比依据。
 
 生成五言绝句：
 

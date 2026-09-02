@@ -92,6 +92,22 @@ def save_checkpoint(model, tokenizer, epoch, valid_metrics, path):
         "epoch": epoch,
         "valid_loss": valid_metrics["loss"],
         "valid_accuracy": valid_metrics["accuracy"],
+        "training_hyperparameters": {
+            "optimizer": "Adam",
+            "loss_function": "CrossEntropyLoss",
+            "learning_rate": config.LEARNING_RATE,
+            "batch_size": config.BATCH_SIZE,
+            "epochs_requested": config.EPOCHS,
+            "max_grad_norm": config.MAX_GRAD_NORM,
+            "early_stopping_patience": (
+                config.EARLY_STOPPING_PATIENCE
+            ),
+            "random_seed": config.RANDOM_SEED,
+        },
+        "data_hyperparameters": {
+            "max_sequence_length": config.MAX_SEQUENCE_LENGTH,
+            "model_input_length": config.MODEL_INPUT_LENGTH,
+        },
     }
     torch.save(checkpoint, path)
 
