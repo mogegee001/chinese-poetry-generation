@@ -2,11 +2,7 @@
 
 一个基于 CCPC 数据集的字符级古诗生成学习项目。
 
-当前版本刻意保持与 `input-method-rnn` 相近的代码组织：
-
-`config -> tokenizer -> process -> dataset -> model -> train -> evaluate -> predict`
-
-基础版只完成三件事：
+基础版当前完成：
 
 1. 用 CCPC 官方训练集、验证集、测试集跑通完整流程。
 2. 用字符级 RNN 生成五言或七言绝句。
